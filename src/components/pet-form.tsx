@@ -7,30 +7,14 @@ import { Textarea } from "./ui/textarea";
 import { usePetContext } from "@/lib/hooks";
 import PetFormBtn from "./pet-form-btn";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DEFAULT_PET_IMAGE } from "@/lib/constants";
+import { petFormSchema, TPetForm } from "@/lib/validations";
 
 type PetFormProps = {
   actionType: "edit" | "add";
   onFormSubmisson: () => void;
 };
-
-const petFormSchema = z.object({
-  name: z.string().trim().min(1, { message: "Name is required" }).max(100),
-  ownerName: z
-    .string()
-    .trim()
-    .min(1, { message: "Owner Name is required" })
-    .max(100),
-  imageUrl: z.union([
-    z.literal(""),
-    z.string().trim().url({ message: "Image Url must be a valid URL" }),
-  ]),
-  age: z.coerce.number().int().positive().max(99999),
-  notes: z.union([z.literal(""), z.string().trim().max(1000)]),
-});
-
-type TPetForm = z.infer<typeof petFormSchema>;
 
 export default function PetForm({ actionType, onFormSubmisson }: PetFormProps) {
   const { selectedPet, handleAddPet, handleEditPet } = usePetContext();
@@ -38,29 +22,35 @@ export default function PetForm({ actionType, onFormSubmisson }: PetFormProps) {
   const {
     register,
     trigger,
+    getValues,
     formState: { errors },
   } = useForm<TPetForm>({
     resolver: zodResolver(petFormSchema),
+    defaultValues:
+      actionType === "edit"
+        ? {
+            // This is the default values for the form
+            //during edit mode ->form would be prefilled
+            name: selectedPet?.name,
+            ownerName: selectedPet?.ownerName,
+            imageUrl: selectedPet?.imageUrl,
+            age: selectedPet?.age,
+            notes: selectedPet?.notes,
+          }
+        : undefined,
   });
 
   return (
     <form
-      action={async (formData) => {
+      action={async () => {
         const result = await trigger();
         if (!result) return;
 
         onFormSubmisson();
 
-        //petData doesn't have an id field
-        const petData = {
-          name: formData.get("name") as string,
-          ownerName: formData.get("ownerName") as string,
-          imageUrl:
-            (formData.get("imageUrl") as string) ||
-            "https://bytegrad.com/course-assets/react-nextjs/pet-placeholder.png",
-          age: Number(formData.get("age")) as number,
-          notes: formData.get("notes") as string,
-        };
+        // Get the form data, validate it, but it doesn't transform the data why?
+        const petData = getValues();
+        petData.imageUrl = petData.imageUrl || DEFAULT_PET_IMAGE;
 
         if (actionType === "edit") {
           await handleEditPet(selectedPet!.id, petData);
