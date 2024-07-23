@@ -2,6 +2,7 @@ import NextAuth, { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import prisma from "./db";
 import bcrypt from "bcryptjs";
+import { getUserByEmail } from "./server-utils";
 
 const config = {
   pages: {
@@ -16,11 +17,7 @@ const config = {
       async authorize(credentials) {
         const { email, password } = credentials;
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email,
-          },
-        });
+        const user = await getUserByEmail(email as string);
 
         if (!user) {
           console.log("User not found");
@@ -39,15 +36,14 @@ const config = {
         }
 
         //user is there and password is correct
-
-        return user;
+        return user; // NextAuth issue -> user has id, but NextAuth doesn't sends id to session
       },
     }),
   ],
   //
   callbacks: {
+    //runs on every request with middleware
     authorized: ({ auth, request }) => {
-      //runs on every request with middleware
       const isLoggedIn = Boolean(auth?.user); //if user is logged in
 
       const isTryingToAccessApp = request.nextUrl.pathname.includes("/app");
@@ -72,6 +68,28 @@ const config = {
       }
 
       return false;
+    },
+    //callback fxn when JSON web token is created
+    jwt: ({ token, user }) => {
+      //user we get from Credentials provider
+      // i.e user object is only available when user is logged in
+      if (user) {
+        //on sign in
+        token.userId = user.id;
+      }
+
+      return token;
+    },
+    session: ({ session, token }) => {
+      //session object is available on every request
+      //token is the object we get from jwt callback
+
+      if (session.user) {
+        //user is logged in
+        session.user.id = token.userId;
+      }
+
+      return session; //this session object is exposed to client
     },
   },
 } satisfies NextAuthConfig;
