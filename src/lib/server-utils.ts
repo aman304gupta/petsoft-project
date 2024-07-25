@@ -15,7 +15,8 @@ export async function checkAuth() {
   return session;
 }
 
-export async function getUserByEmail(email: User["email"]) {
+//ToDo -> correct type
+export async function getUserByEmail(email: string) {
   const user = await prisma.user.findUnique({
     where: {
       email,

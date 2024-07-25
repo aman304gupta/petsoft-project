@@ -3,7 +3,7 @@ import { User } from "next-auth";
 declare module "next-auth" {
   interface User {
     hasAccess: boolean;
-    email: string;
+    email: string; //ToDo -> correct type, not gettig overridden
   }
 }
 

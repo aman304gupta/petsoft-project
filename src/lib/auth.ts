@@ -37,7 +37,7 @@ const config = {
 
         console.log("Email and password", email, password);
 
-        const user = await getUserByEmail(email as string);
+        const user = await getUserByEmail(email);
 
         if (!user) {
           console.log("User not found");
