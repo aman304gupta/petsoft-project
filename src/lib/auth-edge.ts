@@ -1,5 +1,6 @@
 import { NextAuthConfig } from "next-auth";
-import { getUserByEmail } from "./server-utils";
+
+import prisma from "./db";
 
 export const nextAuthEdgeConfig = {
   pages: {
@@ -84,7 +85,13 @@ export const nextAuthEdgeConfig = {
         // await sleep(1000);
         //get latest data from DB
         //we cannot get from user --> because user info from token might not be updated
-        const userFromDb = await getUserByEmail(token.email); //updated user info
+        // const userFromDb = await getUserByEmail(token.email); //updated user info
+
+        const userFromDb = await prisma.user.findUnique({
+          where: {
+            email: token.email,
+          },
+        });
 
         if (userFromDb) {
           token.hasAccess = userFromDb.hasAccess;
