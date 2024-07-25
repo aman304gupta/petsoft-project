@@ -4,6 +4,8 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { getUserByEmail } from "./server-utils";
 import { authSchema } from "@/lib/validations";
+import { sleep } from "./utils";
+import { NextResponse } from "next/server";
 
 const config = {
   pages: {
@@ -17,8 +19,14 @@ const config = {
       //runs on every login attempt
       //credentials type is fixed by NextAuth
       async authorize(credentials) {
+        console.log("Credentials", credentials);
+
+        // console.log("Credentials formData", credentials.formData);
+
         //validate the object -> i,e if it has email and password
         const validatedFormData = authSchema.safeParse(credentials);
+
+        console.log("Validated form data", validatedFormData);
 
         if (!validatedFormData.success) {
           return null;
@@ -26,6 +34,8 @@ const config = {
 
         //extract values
         const { email, password } = validatedFormData.data;
+
+        console.log("Email and password", email, password);
 
         const user = await getUserByEmail(email as string);
 
@@ -46,7 +56,9 @@ const config = {
         }
 
         //user is there and password is correct
-        return user; // NextAuth issue -> user has id, but NextAuth doesn't sends id to session
+        return user;
+        // NextAuth issue -> user has id, but NextAuth doesn't sends id to session
+        //it only sends email
       },
     }),
   ],
@@ -63,29 +75,76 @@ const config = {
         return false;
       }
 
-      //logged in and trying to access app page
-      if (isLoggedIn && isTryingToAccessApp) {
+      //logged in and trying to access app page and does NOT has access
+      if (isLoggedIn && isTryingToAccessApp && !auth?.user.hasAccess) {
+        //redirect to payment page
+        console.log("Redirecting to payment page");
+        return Response.redirect(new URL("/payment", request.nextUrl));
+      }
+
+      //logged in and trying to access app page and has access
+      if (isLoggedIn && isTryingToAccessApp && auth?.user.hasAccess) {
         return true;
       }
 
-      //if user is logged and accessing non-app page --> redirect to app page
-      if (isLoggedIn && !isTryingToAccessApp) {
+      //if user is logged in and trying to access login or signup page
+      //and has access then redirect to dashboard
+      if (
+        isLoggedIn &&
+        (request.nextUrl.pathname.includes("/login") ||
+          request.nextUrl.pathname.includes("/signup")) &&
+        auth?.user.hasAccess
+      ) {
+        //redirect to dashboard page
+        console.log("Redirecting to App dashboard page");
         return Response.redirect(new URL("/app/dashboard", request.nextUrl));
       }
 
+      //if user is logged and accessing non-app page --> redirect to payment page
+      if (isLoggedIn && !isTryingToAccessApp) {
+        //if user is logged in and trying to access login or signup page
+        if (
+          (request.nextUrl.pathname.includes("/login") ||
+            request.nextUrl.pathname.includes("/signup")) &&
+          !auth?.user.hasAccess //doesn not have access
+        ) {
+          //redirect to payment page
+          console.log("Redirecting to payment page");
+          return NextResponse.redirect(new URL("/payment", request.nextUrl));
+        }
+
+        //if user is logged in and trying to access non-app page -> allowed so true
+        //eg -> if accessing /payment -> no redirect
+        return true;
+      }
+
       if (!isLoggedIn && !isTryingToAccessApp) {
+        //public part
         return true;
       }
 
       return false;
     },
     //callback fxn when JSON web token is created
-    jwt: ({ token, user }) => {
+    jwt: async ({ token, user, trigger }) => {
       //user we get from Credentials provider
       // i.e user object is only available when user is logged in
       if (user) {
         //on sign in
         token.userId = user.id;
+        token.email = user.email!; //hack, that email is always there and not undefined
+        token.hasAccess = user.hasAccess;
+      }
+
+      if (trigger === "update") {
+        // await sleep(1000);
+        //get latest data from DB
+        //we cannot get from user --> because user info from token might not be updated
+        const userFromDb = await getUserByEmail(token.email); //updated user info
+
+        if (userFromDb) {
+          token.hasAccess = userFromDb.hasAccess;
+        }
       }
 
       return token;
@@ -94,10 +153,11 @@ const config = {
       //session object is available on every request
       //token is the object we get from jwt callback
 
-      if (session.user) {
-        //user is logged in
-        session.user.id = token.userId;
-      }
+      //user is logged in
+      session.user.id = token.userId;
+      session.user.hasAccess = token.hasAccess;
+
+      //don;t expose pass!!
 
       return session; //this session object is exposed to client
     },

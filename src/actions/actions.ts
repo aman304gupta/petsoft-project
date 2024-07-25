@@ -10,13 +10,15 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { AuthError } from "next-auth";
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 // -- User actions --
 
 //formadata from auth-form.tsx
 //type has to be unknown --> anyone can call this login, so we have to assume unknow type
 //prevState -> because using useFormState in FE --> react returns previous state
 export async function logIn(prevState: unknown, formData: unknown) {
-  await sleep(1000);
+  // await sleep(1000);
 
   //check if formData is of type FormData
   if (!(formData instanceof FormData)) {
@@ -26,12 +28,18 @@ export async function logIn(prevState: unknown, formData: unknown) {
   }
 
   try {
-    await signIn("credentials", formData);
+    await signIn("credentials", {
+      redirectTo: "/app/dashboard",
+      email: formData.get("email"),
+      password: formData.get("password"),
+    });
+    // await signIn("credentials", formData);
     //sign from NextAuth will automatically
     //run redirect -> and redirect to page where it's called i.e login
     //But redirect throws error in NextJs?
   } catch (error) {
     if (error instanceof AuthError) {
+      console.log(error);
       switch (error.type) {
         case "CredentialsSignin": {
           return {
@@ -53,7 +61,7 @@ export async function logIn(prevState: unknown, formData: unknown) {
 }
 
 export async function logOut() {
-  await sleep(1000);
+  // await sleep(1000);
 
   await signOut({
     redirectTo: "/",
@@ -63,7 +71,7 @@ export async function logOut() {
 //Server can't rely on client side validation
 //so we assume formData is of type unknown and validate it here
 export async function signUp(prevState: unknown, formData: unknown) {
-  await sleep(1000);
+  // await sleep(1000);
 
   //check if formData is of type FormData
   if (!(formData instanceof FormData)) {
@@ -114,13 +122,17 @@ export async function signUp(prevState: unknown, formData: unknown) {
 
   //then using NextAuth signIn method to sign in user which will then redirect to app page
   //Credentials expects formData Not validatedFormData, credentials does validation itself
-  await signIn("credentials", formData);
+  await signIn("credentials", {
+    redirectTo: "/payment",
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
 }
 
 // -- Pet actions --
 
 export async function addPet(pet: unknown) {
-  await sleep(1000);
+  // await sleep(1000);
 
   const session = await checkAuth();
 
@@ -153,7 +165,7 @@ export async function addPet(pet: unknown) {
 }
 
 export async function editPet(petId: unknown, newPetData: unknown) {
-  await sleep(1000);
+  // await sleep(1000);
 
   //authentication check -> i.e their token is valid
   const session = await checkAuth();
@@ -205,7 +217,7 @@ export async function editPet(petId: unknown, newPetData: unknown) {
 }
 
 export async function deletePet(petId: unknown) {
-  await sleep(1000);
+  // await sleep(1000);
 
   //authentication check -> i.e their token is valid
   const session = await checkAuth();
@@ -248,4 +260,31 @@ export async function deletePet(petId: unknown) {
   }
 
   revalidatePath("/app", "layout");
+}
+
+// --- payment actions ---
+
+export async function createCheckoutSession() {
+  //authentication check
+  const session = await checkAuth();
+
+  //create checkout session
+  const checkoutSession = await stripe.checkout.sessions.create({
+    customer_email: session.user.email, //this user email would be prefilled in checkout form
+    //items on checkout page
+    line_items: [
+      {
+        price: "price_1PfyeTKlCxbd6zkR5WYRaZjW",
+        quantity: 1,
+      },
+    ],
+    mode: "payment",
+    //after successfull payment
+    success_url: `${process.env.CANONICAL_URL}/payment?success=true`,
+    //after failed payment
+    cancel_url: `${process.env.CANONICAL_URL}/payment?cancelled=true`,
+  });
+
+  //redirect user
+  redirect(checkoutSession.url);
 }
