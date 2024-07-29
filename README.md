@@ -48,7 +48,7 @@
     <br />
     <a href="https://pet-daycare-software.vercel.app/">View Demo</a>
     ·
-    <a href="https://github.com/aman304gupta/petsoft-project/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://github.com/aman304gupta/petsoft-project/issues/new?labels=bug&template=bug-report.md">Report Bug</a>
     ·
     <a href="https://github.com/aman304gupta/petsoft-project/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
@@ -85,8 +85,6 @@
 
 ## About The Project
 
----
-
 [![Product Name Screen Shot](public/Marketing.png)](https://pet-daycare-software.vercel.app/)
 
 <!-- Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `aman304gupta`, `petsoft-project`, `twitter_handle`, `aman304gupta`, `email_client`, `email`, `project_title`, `project_description` -->
@@ -99,8 +97,6 @@ This software is for PetDaycare organization for easier checking in/checking out
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Built With
-
----
 
 - [![Next.js][nextjs-logo]](https://nextjs.org/)
 - [![React][react-logo]](https://reactjs.org/)
@@ -116,8 +112,6 @@ This software is for PetDaycare organization for easier checking in/checking out
 
 ## Features
 
----
-
 - **User Authentication**: Secure login and signup functionality for users.
 - **Payment Integration**: Seamless payment processing using the Stripe API.
 - **Pet Check-in/Check-out**: Streamlined process for checking pets in and out of the facility.
@@ -128,8 +122,6 @@ This software is for PetDaycare organization for easier checking in/checking out
 <!-- Learning -->
 
 ## Learnings
-
----
 
 - **Next.js Server Actions**: Leveraging Next.js "server actions" for server-side operations without a full-fledged backend.
 - **State Management**: Implementing a state management system using a context provider.
@@ -149,8 +141,6 @@ This software is for PetDaycare organization for easier checking in/checking out
 
 ## Usage
 
----
-
 - Either login using the example username and password:
   - **Username**: `example@gmail.com`
   - **Password**: `example`
@@ -164,8 +154,6 @@ This software is for PetDaycare organization for easier checking in/checking out
 <!-- Product Screenshots -->
 
 ## Product Screenshots
-
----
 
 <!-- ![Login!](/public/Login.png "Login")
 ![App Dashboard!](/public/App-DashBoard.png "App Dashboard")
@@ -190,8 +178,6 @@ Here are some screenshots of the project:
 
 ## Architecture
 
----
-
 Architecture
 
 <p align="center">
@@ -209,8 +195,6 @@ Component Tree
 <!-- GETTING STARTED -->
 
 ## Getting Started
-
----
 
 ### Prerequisites
 
@@ -244,8 +228,6 @@ Latest version of npm
 <!-- ROADMAP -->
 
 ## Roadmap
-
----
 
 - [ ] Session instead of JWT
 - [ ] Payment after login
